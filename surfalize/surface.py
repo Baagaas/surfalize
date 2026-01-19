@@ -2384,7 +2384,7 @@ class Surface(CachedInstance):
             image.save(save_to)
         return image
 
-    def show(self, cmap='jet', maskcolor='black', layer='Topography', ax=None):
+    def show(self, cmap='jet', maskcolor='black', layer='Topography', ax=None, block=True):
         """
         Shows a 2D-plot of the surface using matplotlib.
 
@@ -2405,4 +2405,4 @@ class Surface(CachedInstance):
         None.
         """
         self.plot_2d(cmap=cmap, maskcolor=maskcolor, layer=layer, ax=ax)
-        plt.show()
+        plt.show(block=block)
