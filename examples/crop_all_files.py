@@ -3,6 +3,6 @@ import matplotlib.pyplot as plt
 from scipy import ndimage  # type: ignore
 import numpy as np
 from pathlib import Path
-import cropper
+import surfalize.addons_bv.operations as operations_bv
 
-cropper.crop_all_files(data_path=Path.cwd() / 'data')
+operations_bv.crop_all_files(data_path=Path.cwd() / 'data')
