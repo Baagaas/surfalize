@@ -17,7 +17,7 @@ if __name__ == "__main__":
     batch_path = data_path / 'cropped'
     filepaths = (batch_path).glob('*.sur')
     batch = Batch(filepaths)
-    batch.level().remove_outliers().fill_nonmeasured(method='nearest').Sa().Sq().Sdr() # type: ignore[attr-defined]
+    batch.level().remove_outliers().fill_nonmeasured(method='nearest') # type: ignore[attr-defined]
     pattern = '<Material|str|>_' \
     '<Pulse_Duration|int||fs>_' \
     '<Fluence|float||Jcm2>_' \
@@ -25,5 +25,6 @@ if __name__ == "__main__":
     '<Measurement|int>'
     batch.extract_from_filename(pattern)
     batch.custom_parameter(measure_fft_filtered_morphed_surface_depth)
-    result = batch.execute(multiprocessing=False, saveto=batch_path / 'results_fft_morph_depth.csv')
-    print(result)
+    result = batch.execute(multiprocessing=False, saveto=batch_path / 'results_fft_morph_depth.xlsx')
+    df = result.get_dataframe()
+    print(df)

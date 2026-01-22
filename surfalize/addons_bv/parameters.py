@@ -70,4 +70,4 @@ def measure_fft_filtered_morphed_surface_depth(surf: Surface) -> dict:
     # print(f"Average dilated value: {average_value_dilated}")
     # print(f"Average difference (depth): {depth}")
     # print(f"Depth standard deviation: {depth_std}")
-    return {'height': depth, 'depth_std': depth_std}
+    return {'depth': depth, 'depth_std': depth_std}

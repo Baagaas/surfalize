@@ -3,61 +3,66 @@ from scipy import ndimage # type: ignore
 from surfalize.addons_bv.help_fncs import fill_circle_in_matrix
 from surfalize import Surface
 import matplotlib.pyplot as plt
-from pathlib import Path
 
 class ClickHandler:
-    def __init__(self, ax):
+    def __init__(self, ax, crop_width=100, crop_ind_color='red'):
         self.ax = ax
         self.last_click = None  # Stores last clicked position as tuple
         self.esc_pressed =False
+        self.rect = None
+        self.crop_width = crop_width  # Width of the cropping rectangle in data units
+        self.crop_ind_color = crop_ind_color  # Color of the cropping rectangle
     
     def on_click(self, event):
         if event.inaxes != self.ax:
             return
         self.last_click = (event.xdata, event.ydata)
-        print(f"Last click: {self.last_click}")
-        plt.close(self.ax.figure)
+       
+        # Remove previous rectangle if it exists
+        if self.rect is not None:
+            self.rect.remove()
+        
+        # Draw new rectangle centered at mouse position
+        x_center, y_center = event.xdata, event.ydata
+        print(f"Mouse moved to: ({x_center}, {y_center})")
+        x0 = x_center - self.crop_width / 2
+        y0 = 0
+        height = self.ax.get_ylim()[1] - self.ax.get_ylim()[0]
+        
+        from matplotlib.patches import Rectangle
+        self.rect = Rectangle((x0, y0), self.crop_width, height, 
+                             linewidth=2, edgecolor=self.crop_ind_color, facecolor='none', linestyle='--')
+        self.ax.add_patch(self.rect)
+        self.ax.figure.canvas.draw_idle()
 
-    def on_key(self, event):
+    def on_key_esc(self, event):
         if event.key == 'escape':
             print("Escape key pressed!")
             self.esc_pressed = True
             plt.close(self.ax.figure)
 
-
-def crop_all_files(data_path):
-    data_path = Path(data_path)
-    crop_folder_name = 'cropped'
-    cropped_folder = data_path / crop_folder_name
-    cropped_folder.mkdir(parents=True, exist_ok=True)
-
-    files = list(data_path.glob('*.plux'))
-
-    for file_path in files:
-        s1 = Surface.load(file_path) 
-        s1 = crop_visual(s1)
-        if s1 is None:
-            break
-
-        # Move the processed file to the cropped folder
-        cropped_file_path = cropped_folder / file_path.with_suffix('.sur').name
-
-        s1.save(cropped_file_path, 'sur')
-        surf_temp = Surface.load(cropped_file_path)
-
-        surf_temp.show()
-
-def crop_visual(surf: Surface, crop_width=100, save_folder_path=None) -> Surface|None:   
-    surf = Surface(surf.data.copy(), step_x=surf.step_x, step_y=surf.step_y)
+def crop_visual(surf: Surface, crop_width=100, crop_ind_color = 'red', show_cropped=False, title=None) -> Surface|None:   
+    surf = Surface(surf.data.copy(), step_x=surf.step_x, step_y=surf.step_y, metadata=surf.metadata.copy())
     surf_temp = surf.level().remove_outliers()
+    
+    # Plot surface for visual cropping
     fig, ax = surf_temp.plot_2d()
-    handler = ClickHandler(ax)
+    if title is not None:
+        fig.suptitle(title, fontsize=14, fontweight='bold')
+
+    handler = ClickHandler(ax, crop_width=crop_width, crop_ind_color=crop_ind_color)
     fig.canvas.mpl_connect('button_press_event', handler.on_click)
-    fig.canvas.mpl_connect('key_press_event', handler.on_key)
+    fig.canvas.mpl_connect('key_press_event', handler.on_key_esc)
+
+    #show plot in full screen
+    plt.show(block=False)
+    plt.pause(0.1)
+    mng = plt.get_current_fig_manager()
+    mng.window.state('zoomed')
     plt.show()
 
     # Calculate box (x0, x1, y0, y1) centered at last_click with crop_width and max height
-    if handler.last_click and not handler.esc_pressed:
+    if handler.last_click:
         x_center, y_center = handler.last_click
         x0 = x_center - crop_width / 2
         x1 = x_center + crop_width / 2
@@ -73,8 +78,21 @@ def crop_visual(surf: Surface, crop_width=100, save_folder_path=None) -> Surface
 
         surf.crop(box=box, in_units=True, inplace=True)
         print(f"Cropped with box: {box}")
-        if save_folder_path is not None:
-            save_folder_path = Path(save_folder_path)
+
+        if show_cropped:
+            # Visualize cropped file
+            fig, ax = surf.plot_2d()
+            
+            # Add key press event handler to close plot on escape press
+            handler = ClickHandler(ax)
+            fig.canvas.mpl_connect('key_press_event', handler.on_key_esc)
+            
+            #show plot in full screen
+            plt.show(block=False)
+            plt.pause(0.1)
+            mng = plt.get_current_fig_manager()
+            mng.window.state('zoomed')
+            plt.show()
 
         return surf
     else:
