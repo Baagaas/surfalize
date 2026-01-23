@@ -4,6 +4,8 @@ from scipy import ndimage  # type: ignore
 import numpy as np
 from pathlib import Path
 from surfalize.addons_bv.parameters import measure_fft_filtered_morphed_surface_depth
+from surfalize.addons_bv.operations import crop_centered
+from functools import partial
 
 if __name__ == "__main__":
     data_path = Path.cwd() / 'data'
@@ -17,7 +19,13 @@ if __name__ == "__main__":
     batch_path = data_path / 'cropped'
     filepaths = (batch_path).glob('*.sur')
     batch = Batch(filepaths)
-    batch.level().remove_outliers().fill_nonmeasured(method='nearest') # type: ignore[attr-defined]
+    batch.level() # type: ignore[attr-defined]
+
+    crop_centered_part =  partial(crop_centered, crop_width=100, crop_height=0)
+    batch.custom_operation(crop_centered_part)
+
+    # batch.remove_outliers()
+    batch.fill_nonmeasured(method='nearest') # type: ignore[attr-defined]
     pattern = '<Material|str|>_' \
     '<Pulse_Duration|int||fs>_' \
     '<Fluence|float||Jcm2>_' \
