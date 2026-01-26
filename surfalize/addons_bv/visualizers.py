@@ -116,5 +116,5 @@ def list_files_with_events(folder_path):
     root.mainloop()
 
 data_path = Path.cwd() / 'data'
-data_path = r'Y:\Sensofar\_Projects\Non-Industry\F-014003_ZIM_EffPlus_2nP_TUD\02_Project_Data\Materials\_Final PLUX Files\cropped'
+# data_path = r'Y:\Sensofar\_Projects\Non-Industry\F-014003_ZIM_EffPlus_2nP_TUD\02_Project_Data\Materials\_Final PLUX Files\cropped'
 list_files_with_events(data_path)

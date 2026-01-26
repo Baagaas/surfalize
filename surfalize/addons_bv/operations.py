@@ -143,8 +143,7 @@ def crop_visual(surf: Surface, crop_width=100, crop_height = 0, crop_ind_color =
         print("No click position saved or escape pressed")
         return None
     
-def crop_centered(surf: Surface, crop_width=100, crop_height=0) -> Surface:
-    surf = Surface(surf.data.copy(), step_x=surf.step_x, step_y=surf.step_y, metadata=surf.metadata.copy())
+def crop_centered(surf: Surface, crop_width=100, crop_height=0):
     surf.level(inplace=True)
     
     x_center = surf.width_um / 2
@@ -184,8 +183,6 @@ def crop_centered(surf: Surface, crop_width=100, crop_height=0) -> Surface:
 
     surf.crop(box=box, in_units=True, inplace=True)
     print(f"Cropped centered with box: {box}")
-
-    return surf
 
 def fft_filter_periodic(surf: Surface, type='pass', str_period_um=5, filter_radius=0.05, orders=7, plot_fft=True) -> Surface:
     # Compute and visualize Fourier space

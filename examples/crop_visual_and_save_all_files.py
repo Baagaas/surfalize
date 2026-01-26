@@ -42,8 +42,8 @@ def crop_and_save_all_files(data_path,
             break
 
 if __name__ == "__main__":
-    # data_path = Path.cwd() / 'data'
-    data_path = Path(r'Y:\Sensofar\_Projects\Non-Industry\F-014003_ZIM_EffPlus_2nP_TUD\02_Project_Data\Materials\_Final PLUX Files')
+    data_path = Path.cwd() / 'data'
+    # data_path = Path(r'Y:\Sensofar\_Projects\Non-Industry\F-014003_ZIM_EffPlus_2nP_TUD\02_Project_Data\Materials\_Final PLUX Files')
     crop_and_save_all_files(data_path=data_path, 
                             crop_width=600, crop_height=0, 
                             file_filter='*1.8*005*.plux', show_cropped=False)
