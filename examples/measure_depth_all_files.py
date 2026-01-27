@@ -4,11 +4,11 @@ from scipy import ndimage  # type: ignore
 import numpy as np
 from pathlib import Path
 from surfalize.addons_bv.parameters import measure_fft_filtered_morphed_surface_depth
-from surfalize.addons_bv.operations import crop_centered
+from surfalize.addons_bv.operation_batch import crop_centered
 from functools import partial
 
 if __name__ == "__main__":
-    data_path = Path.cwd() / 'data'
+    data_path = Path.cwd() / 'data' / 'cropped_100um'
     crop_folder_name = 'cropped'
     file_name = 'Steel_55fs_1.8Jcm2_005Pulses_1'
 
@@ -22,10 +22,8 @@ if __name__ == "__main__":
     batch = Batch(filepaths)
     batch.level() # type: ignore[attr-defined]
 
-    crop_centered_part =  partial(crop_centered, crop_width=100, crop_height=0)
-    batch.custom_operation(crop_centered_part)
-
-    # batch.crop(box=(250,350,0,100), in_units=True) # type: ignore[attr-defined]
+    # crop_centered_part =  partial(crop_centered, crop_width=100, crop_height=0)
+    # batch.custom_operation(crop_centered_part)
 
     # batch.remove_outliers()
     batch.fill_nonmeasured(method='nearest') # type: ignore[attr-defined]
@@ -35,8 +33,17 @@ if __name__ == "__main__":
     '<Pulses|int||Pulses>_' \
     '<Measurement|int>'
     batch.extract_from_filename(pattern)
-    batch.custom_parameter(measure_fft_filtered_morphed_surface_depth)
+
+    measure_fft_filtered_morphed_surface_depth_part = partial(
+        measure_fft_filtered_morphed_surface_depth, str_period_um=1/0.188, filter_radius=0.01, orders=2, plot_fft=False)
+    batch.custom_parameter(measure_fft_filtered_morphed_surface_depth_part)
     result = batch.execute(multiprocessing=False, saveto=batch_path / 'results_fft_morph_depth.xlsx')
     df = result.get_dataframe()
     print(df)
+    # Plot pulses vs depth
+    plt.scatter(df['Pulses'], df['depth'])
+    plt.xlabel('Pulses')
+    plt.ylabel('Depth')
+    plt.title('Pulses vs Depth')
+    plt.show(block=False)
     input("Press Enter to exit...")

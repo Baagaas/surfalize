@@ -63,7 +63,7 @@ class ClickHandler:
             self.esc_pressed = True
             plt.close(self.ax.figure)
 
-def crop_visual(surf: Surface, crop_width=100, crop_height = 0, crop_ind_color = 'red', show_cropped=False, title=None) -> Surface|None:   
+def crop_visual(surf: Surface, crop_width=100, crop_height = 0, crop_ind_color = 'red', show_cropped=False, title=None) -> None:   
     surf = Surface(surf.data.copy(), step_x=surf.step_x, step_y=surf.step_y, metadata=surf.metadata.copy())
     surf_temp = surf.level().remove_outliers()
     
@@ -142,47 +142,6 @@ def crop_visual(surf: Surface, crop_width=100, crop_height = 0, crop_ind_color =
     else:
         print("No click position saved or escape pressed")
         return None
-    
-def crop_centered(surf: Surface, crop_width=100, crop_height=0):
-    surf.level(inplace=True)
-    
-    x_center = surf.width_um / 2
-    y_center = surf.height_um / 2
-
-    if crop_width > 0:
-        x0 = x_center - crop_width / 2
-        x1 = x_center + crop_width / 2
-    else:
-        x0 = 0
-        x1 = surf.width_um
-
-    if crop_height > 0:
-        y0 = y_center - crop_height / 2
-        y1 = y_center + crop_height / 2
-    else:
-        y0 = 0
-        y1 = surf.height_um
-
-    # Adjust x0, x1 if out of bounds
-        if x0 < 0:
-            x0 = 0
-            x1 = crop_width
-        if x1 > surf.width_um:
-            x1 = surf.width_um
-            x0 = surf.width_um - crop_width
-
-    # Adjust y0, y1 if out of bounds
-        if y0 < 0:
-            y0 = 0
-            y1 = crop_height
-        if y1 > surf.height_um:
-            y1 = surf.height_um
-            y0 = surf.height_um - crop_height
-        
-    box = (x0, x1, y0, y1)
-
-    surf.crop(box=box, in_units=True, inplace=True)
-    print(f"Cropped centered with box: {box}")
 
 def fft_filter_periodic(surf: Surface, type='pass', str_period_um=5, filter_radius=0.05, orders=7, plot_fft=True) -> Surface:
     # Compute and visualize Fourier space

@@ -52,7 +52,7 @@ def calculate_morph_depth(surf: Surface, element_size_um=5.5, crop_edges=True, c
             s_eroded, s_dilated, s_diff)
 
 def measure_fft_filtered_morphed_surface_depth(surf: Surface,
-                                               str_period_um=1/0.188, filter_radius=0.01, orders=7, plot_fft=False) -> dict:
+                                               str_period_um=5, filter_radius=0.02, orders=7, plot_fft=False) -> dict:
     # surf.level(inplace=True)
     # surf.remove_outliers(inplace=True)
     # surf.fill_nonmeasured(inplace=True, method='nearest')
@@ -68,7 +68,7 @@ def measure_fft_filtered_morphed_surface_depth(surf: Surface,
     # plt.title("Original Surface")
     # surf_filtered.show(block=False)
     # plt.title("FFT Filtered Surface")
-    s_diff.show(block=False)
+    # s_diff.show(block=False)
     plt.title("Difference Surface (Dilated - Eroded)")
     # print(f"Average eroded value: {average_value_eroded}")
     # print(f"Average dilated value: {average_value_dilated}")
