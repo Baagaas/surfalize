@@ -1,8 +1,7 @@
-import numpy as np
-from scipy import ndimage # type: ignore
-from surfalize.addons_bv.help_fncs import fill_circle_in_matrix
 from surfalize import Surface
 import matplotlib.pyplot as plt
+
+from surfalize.addons_bv import help_fncs
 
 class ClickHandler:
     def __init__(self, ax, crop_width=100, crop_ind_color='red'):
@@ -17,6 +16,9 @@ class ClickHandler:
         if event.inaxes != self.ax:
             return
         self.last_click = (event.xdata, event.ydata)
+        
+        x_center, y_center = event.xdata, event.ydata
+        print(f"Mouse moved to: ({x_center}, {y_center})")
        
         # Remove previous rectangle if it exists
         if self.rect is not None:
@@ -27,17 +29,7 @@ class ClickHandler:
         for line in lines:
             line.remove()
 
-        # Draw new rectangle centered at mouse position
-        x_center, y_center = event.xdata, event.ydata
-        print(f"Mouse moved to: ({x_center}, {y_center})")
-        x0 = x_center - self.crop_width / 2
-        y0 = 0
-        height = self.ax.get_ylim()[1] - self.ax.get_ylim()[0]
-        
-        from matplotlib.patches import Rectangle
-        self.rect = Rectangle((x0, y0), self.crop_width, height, 
-                             linewidth=2, edgecolor=self.crop_ind_color, facecolor='none', linestyle='--')
-        self.ax.add_patch(self.rect)
+        self.rect = help_fncs.plot_add_rect_vertical(self.ax, x_center, self.crop_width, crop_ind_color=self.crop_ind_color, linewidth=2)
 
         # Draw a cross at the center of the rectangle
         min_size = min(self.ax.get_xlim()[1] - self.ax.get_xlim()[0], self.ax.get_ylim()[1] - self.ax.get_ylim()[0])
@@ -63,8 +55,41 @@ class ClickHandler:
             self.esc_pressed = True
             plt.close(self.ax.figure)
 
-def crop_visual(surf: Surface, crop_width=100, crop_height = 0, crop_ind_color = 'red', show_cropped=False, title=None) -> None:   
-    surf = Surface(surf.data.copy(), step_x=surf.step_x, step_y=surf.step_y, metadata=surf.metadata.copy())
+def get_center_pos_visual(surf: Surface, crop_ind_color = 'red', title=None) -> tuple[float|None, float|None]:   
+    # surf = Surface(surf.data.copy(), step_x=surf.step_x, step_y=surf.step_y, metadata=surf.metadata.copy())
+    surf_temp = surf.level().remove_outliers()
+    
+    # Plot surface for visual cropping
+    fig, ax = surf_temp.plot_2d()
+    if title is not None:
+        fig.suptitle(title, fontsize=14, fontweight='bold')
+
+    handler = ClickHandler(ax, crop_ind_color=crop_ind_color)
+    fig.canvas.mpl_connect('button_press_event', handler.on_click)
+    fig.canvas.mpl_connect('key_press_event', handler.on_key_esc)
+
+    #show plot in full screen
+    plt.show(block=False)
+    plt.pause(0.1)
+    mng = plt.get_current_fig_manager()
+    try:
+        if hasattr(mng, "window"):
+            mng.window.state('zoomed')
+    except AttributeError:
+        print("Full screen mode not supported on this backend.")
+
+    plt.show()
+
+    # Calculate box (x0, x1, y0, y1) centered at last_click with crop_width and max height
+    if handler.last_click:
+        x_center, y_center = handler.last_click
+        return x_center, y_center
+    else:
+        print("No click position saved or escape pressed")
+        return None
+
+def crop_visual(surf: Surface, crop_width=100, crop_height = 0, crop_ind_color = 'red', show_cropped=False, title=None) -> float | None:   
+    # surf = Surface(surf.data.copy(), step_x=surf.step_x, step_y=surf.step_y, metadata=surf.metadata.copy())
     surf_temp = surf.level().remove_outliers()
     
     # Plot surface for visual cropping
@@ -80,7 +105,12 @@ def crop_visual(surf: Surface, crop_width=100, crop_height = 0, crop_ind_color =
     plt.show(block=False)
     plt.pause(0.1)
     mng = plt.get_current_fig_manager()
-    mng.window.state('zoomed')
+    try:
+        if hasattr(mng, "window"):
+            mng.window.state('zoomed')
+    except AttributeError:
+        print("Full screen mode not supported on this backend.")
+
     plt.show()
 
     # Calculate box (x0, x1, y0, y1) centered at last_click with crop_width and max height
@@ -138,51 +168,8 @@ def crop_visual(surf: Surface, crop_width=100, crop_height = 0, crop_ind_color =
             mng.window.state('zoomed')
             plt.show()
 
-        return surf
+        return x_center
     else:
         print("No click position saved or escape pressed")
         return None
-
-def fft_filter_periodic(surf: Surface, type='pass', str_period_um=5, filter_radius=0.05, orders=7, plot_fft=True) -> Surface:
-    # Compute and visualize Fourier space
-    data= surf.data.copy()
-    rows, cols = surf.size
-    fft_data = np.fft.fft2(data)
-    fft_shifted = np.fft.fftshift(fft_data)
-
-    # Plot Fourier transform with period units in 1/µm
-    freq_x = np.fft.fftshift(np.fft.fftfreq(cols, d=surf.step_x))
-    freq_y = np.fft.fftshift(np.fft.fftfreq(rows, d=surf.step_y))
-
-    # Draw a circle on the real part of fft_shifted
-    # Using physical units: center at (0, 0) 1/µm with radius 5.0 1/µm
-    mask = np.zeros((rows, cols))
-    rc=0.05
-    for n in range(-orders, orders + 1):
-        mask = fill_circle_in_matrix(
-            mask, 0, n * 1 / str_period_um, filter_radius,
-            step_x=surf.step_x, step_y=surf.step_y, use_physical_units=True
-        )
     
-    fft_filtered = np.copy(fft_shifted)
-    if type == 'pass':
-        fft_filtered[mask == 0] = 0
-    elif type == 'stop':
-        fft_filtered[mask == 1] = 0
-
-    magnitude_spectrum = np.log1p(np.abs(fft_filtered))
-
-    if plot_fft:
-        fig_fft, ax_fft = plt.subplots(figsize=(8, 8))
-        extent = (freq_x.min(), freq_x.max(), freq_y.min(), freq_y.max())
-        im = ax_fft.imshow(magnitude_spectrum, cmap='gray', extent=extent, origin='lower')
-        ax_fft.set_title('Fourier Transform of Surface')
-        ax_fft.set_xlabel('Frequency X [1/µm]')
-        ax_fft.set_ylabel('Frequency Y [1/µm]')
-        plt.colorbar(im, ax=ax_fft, label='Log Magnitude')
-
-    # Reconstruct image from the shifted FFT
-
-    reconstructed_data = np.fft.ifft2(np.fft.ifftshift(fft_filtered)).real
-    
-    return Surface(reconstructed_data, step_x=surf.step_x, step_y=surf.step_y)
